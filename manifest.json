@@ -1,0 +1,23 @@
+{
+  "name": "CONSULTA BASE HADMAGE",
+  "short_name": "BASE HADMAGE",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b0b0d",
+  "theme_color": "#0b0b0d",
+  "description": "Consulta Base HADMAGE",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMGIwYjBkIi8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIxODUiIGZpbGw9IiMxMTExMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxOCIvPjxwYXRoIGQ9Ik0yMTggMTI1aDc2djkyaDkzdjc4aC05M3Y5MmgtNzZ2LTkyaC05M3YtNzhoOTN6IiBmaWxsPSIjNjZkNmEzIi8+PC9zdmc+",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMGIwYjBkIi8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIxODUiIGZpbGw9IiMxMTExMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxOCIvPjxwYXRoIGQ9Ik0yMTggMTI1aDc2djkyaDkzdjc4aC05M3Y5MmgtNzZ2LTkyaC05M3YtNzhoOTN6IiBmaWxsPSIjNjZkNmEzIi8+PC9zdmc+",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

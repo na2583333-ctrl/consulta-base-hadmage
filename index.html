@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0b0d">
+<title>Consulta Base HADMAGE</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b0b0d;color:#fff;font-family:Arial,sans-serif}.app{max-width:800px;margin:auto;padding:18px 14px 40px}h1{font-size:25px;margin:5px 0}.sub{color:#aaa;line-height:1.4}.grid{display:grid;grid-template-columns:120px 1fr;gap:10px}.label{display:block;color:#bbb;font-size:12px;font-weight:bold;margin:15px 0 7px}input,textarea{width:100%;background:#151519;color:#fff;border:1px solid #303038;border-radius:10px;padding:12px;font-size:15px;outline:0}textarea{min-height:150px;font-family:monospace}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.btn{border:1px solid #3b3b43;background:#25252b;color:#fff;border-radius:10px;padding:12px 14px;font-weight:bold}.primary{background:#fff;color:#000}.danger{background:#351b1b}.progress{height:9px;background:#202025;border-radius:20px;overflow:hidden;margin:12px 0}.bar{height:100%;width:0;background:#fff}.stats{color:#aaa;font-size:13px;margin:8px 0}.result{background:#08080a;border:1px solid #292930;border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;font:14px/1.6 monospace;min-height:180px}.hint{color:#777;font-size:12px;line-height:1.45}.ok{color:#8f8}.err{color:#f88}
+</style>
+<link rel="manifest" href="./manifest.json"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CONSULTA BASE HADMAGE"><meta name="theme-color" content="#0b0b0d">
+</head>
+<body>
+<div class="app">
+<h1>CONSULTA BASE HADMAGE</h1>
+
+<div class="grid">
+<div><label class="label">DDD</label><input id="ddd" inputmode="numeric" maxlength="2" placeholder="11"></div>
+<div><label class="label">BASE</label><textarea id="bases" placeholder="Digite as bases, uma por linha"></textarea></div>
+</div>
+<input id="key" type="hidden" value="28092011" autocomplete="off">
+<div class="actions">
+<button class="btn primary" id="generate">GERAR BASES</button>
+<button class="btn primary" id="consult">CONSULTAR OPERADORAS</button>
+<button class="btn" id="copy">COPIAR RESULTADO</button>
+<button class="btn danger" id="clear">LIMPAR</button>
+</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="stats" id="stats">0 números</div>
+<label class="label">PESQUISAR</label>
+<input id="search" placeholder="Número ou operadora">
+<div class="result" id="result">Nenhum número gerado.</div>
+<p class="hint">Formato: DDD 98888-8888.</p>
+</div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let data=[]; let stopped=false;
+const servers=[
+ 'http://consultaoperadora1.telein.com.br/sistema/consulta_json.php',
+ 'http://consultaoperadora2.telein.com.br/sistema/consulta_json.php',
+ 'http://consultaoperadora3.telein.com.br/sistema/consulta_json.php'
+];
+function digits(s){return String(s||'').replace(/\D/g,'')}
+function unique(a){return [...new Set(a)]}
+// Para uma base ABCDE, varia cada posição numérica, mantendo as demais posições.
+// Ex.: 98888 -> 98088...98988; depois 98808...98898; etc.
+function makeBase(base,ddd){
+ base=digits(base).slice(0,5); if(base.length!==5)return [];
+ const out=[];
+ for(let pos=1;pos<5;pos++){
+   for(let d=0;d<=9;d++){
+     const a=base.split(''); a[pos]=String(d);
+     const n=a.join(''); if(n.length===5) out.push(ddd+n.slice(0,5-0));
+   }
+ }
+ // A última sequência altera os quatro dígitos finais do telefone.
+ for(let d=0;d<=9;d++){
+   const p=base+'-'+String(d)+base.slice(1,5); // placeholder, substituído abaixo
+ }
+ // Geração completa da regra solicitada: primeiro bloco, posição a posição,
+ // e depois 4 dígitos finais mantendo os cinco dígitos da base.
+ const result=[]; const seen=new Set();
+ function add(subscriber){
+   // Exatamente 9 dígitos depois do DDD: XXXXX-XXXX.
+   const d=String(ddd).replace(/\D/g,'').slice(0,2);
+   const sub=String(subscriber).replace(/\D/g,'');
+   if(d.length!==2 || sub.length!==9)return;
+   const formatted=d+' '+sub.slice(0,5)+'-'+sub.slice(5,9);
+   if(!seen.has(formatted)){seen.add(formatted);result.push(formatted)}
+ }
+ // Varia a 2ª, 3ª, 4ª e 5ª posição do bloco de 5 dígitos.
+ for(let pos=1;pos<5;pos++) for(let d=0;d<=9;d++){let a=base.split('');a[pos]=String(d);add(a.join('')+base.slice(1));}
+ // Varia os quatro últimos dígitos do número, um por vez.
+ for(let pos=0;pos<4;pos++) for(let d=0;d<=9;d++){let b=base.slice(1).split('');b[pos]=String(d);add(base+b.join(''));}
+ return result;
+}
+function generate(){
+ const d=digits($('ddd').value).slice(0,2); const bases=$('bases').value.split(/\s+/).map(digits).filter(x=>x.length===5);
+ if(d.length!==2){alert('Informe um DDD com 2 dígitos.');return}
+ if(!bases.length){alert('Informe pelo menos uma base com 5 dígitos.');return}
+ const all=[]; for(const b of bases) all.push(...makeBase(b,d));
+ data=unique(all).map(number=>({number,operator:''})); $('bar').style.width='0%'; render();
+}
+function filtered(){const q=$('search').value.trim().toUpperCase(); if(!q)return data; const nq=digits(q); return data.filter(x=>(nq&&x.number.includes(nq))||x.operator.toUpperCase().includes(q));}
+function render(){const v=filtered();$('stats').textContent=data.length+' números gerados • '+v.length+' exibidos';$('result').textContent=v.length?v.map(x=>x.number+'   '+(x.operator||'()')).join('\n'):'Nenhum resultado.'}
+const OPERATOR_NAMES={
+ '553005':'AMERICA NET','553009':'BBS OPTIONS','553016':'CLARO','553019':'ALGAR','553020':'DATORA','553057':'LIGUE TELECOM','553070':'OI','553082':'SERCOMTEL','553083':'SISTEER','553093':'TELECALL','553097':'VIVO','553102':'TIM','553117':'TERAPAR','553139':'EUTV','553228':'J SAFRA TELECOMUNICACOES','553229':'NLT','553230':'SURF TELECOM','553356':'UNIFIQUE','553428':'BRISANET','553504':'VECTO MOBILE','553520':'CUBIC TELECOM BRASIL','553524':'1NCE','553639':'CONNECT IOT SOLUTION','553644':'AIRNITY BRASIL TELECOM','553648':'IEZ TELECOM',
+ '552046':'GVT','552089':'SUPORTE TECNOLOGIA','552097':'TELEFONICA BRASIL','552102':'TIM'
+};
+function operatorName(code){
+ const c=String(code||'').trim();
+ return OPERATOR_NAMES[c] || (c.startsWith('553') ? 'OUTRA OPERADORA ('+c+')' : c);
+}
+function parseOperator(obj){
+ if(!obj)return '';
+ let value='';
+ if(typeof obj==='string') value=obj;
+ else value=obj.operadora||obj.operador||obj.nome_operadora||obj.carrier||obj.operator||obj.codigo_operadora||'';
+ value=String(value).trim();
+ if(value.includes('#')) value=value.split('#')[0].trim();
+ return operatorName(value);
+}
+async function queryServer(url,number,key){
+ const clean=digits(number); const params=new URLSearchParams({chave:key,numero:clean});
+ const r=await fetch(url+'?'+params.toString(),{method:'GET',mode:'cors'}); if(!r.ok)throw new Error('HTTP '+r.status); const j=await r.json(); return parseOperator(j)||'';
+}
+async function queryNumber(number,key){for(const s of servers){try{const op=await queryServer(s,number,key); if(op)return op}catch(e){}} return '';}
+async function consult(){
+ if(!data.length){alert('Gere as bases primeiro.');return}
+ const key=$('key').value.trim(); if(!key){alert('Chave de consulta não configurada.');return}
+ stopped=false; const total=data.length; let done=0;
+ for(let i=0;i<data.length;i++){
+   if(stopped)break; data[i].operator=await queryNumber(data[i].number,key); done++; $('bar').style.width=(done/total*100).toFixed(1)+'%'; $('stats').textContent=done+'/'+total+' consultas concluídas'; if(done%5===0)render();
+   // Pequena pausa para não disparar todas as requisições simultaneamente.
+   await new Promise(r=>setTimeout(r,120));
+ }
+ render(); if(stopped)alert('Consulta interrompida.'); else alert('Consultas concluídas.');
+}
+$('generate').onclick=generate;
+$('consult').onclick=consult;
+$('search').oninput=render;
+$('copy').onclick=async()=>{const v=filtered();if(!v.length){alert('Nada para copiar.');return}try{await navigator.clipboard.writeText(v.map(x=>x.number+'   '+(x.operator||'()')).join('\n'));alert('Resultado copiado!')}catch(e){alert('Não foi possível copiar automaticamente. Selecione e copie o resultado.')}};
+$('clear').onclick=()=>{$('ddd').value='';$('bases').value='';data=[];$('bar').style.width='0';render()};
+// Toque longo/duplo no botão de consulta pode ser interrompido fechando a página; não há consulta paralela.
+render();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("./service-worker.js").catch(()=>{});}</script>
+</body>
+</html>
